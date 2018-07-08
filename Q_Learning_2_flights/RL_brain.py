@@ -41,9 +41,9 @@ class QLearningTable:
         q_predict = self.q_table.loc[s, a]
         if s_ != 'terminal':
             q_target = r + self.gamma * self.q_table.loc[s_, :].max()  # next state is not terminal
-            if s_[0] == 'reached':
+            if  'reached0' in s_:
                 self.reached = 0
-            elif s_[1] == 'reached':
+            elif 'reached1' in s_:
                 self.reached = 1
             else:
                 self.reached = 2

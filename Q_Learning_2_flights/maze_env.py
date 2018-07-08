@@ -174,11 +174,11 @@ class Maze(tk.Tk, object):
             s_ = 'terminal'
         elif s_[0] == self.canvas.coords(self.oval1):
             reward = 0
-            s_[0] = 'reached'
+            s_[0] = 'reached0'
             done = False
         elif s_[1] == self.canvas.coords(self.oval2):
             reward = 0
-            s_[1] = 'reached'
+            s_[1] = 'reached1'
             done = False
         else:
             reward = 0
