@@ -40,6 +40,7 @@ if __name__ == "__main__":
     # maze game
     env = Maze()
     RL = DeepQNetwork(env.n_actions, env.n_features,
+                      action_space=env.action_space,
                       learning_rate=0.01,
                       reward_decay=0.9,
                       e_greedy=0.9,

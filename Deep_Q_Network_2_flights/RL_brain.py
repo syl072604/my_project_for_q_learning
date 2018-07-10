@@ -24,6 +24,7 @@ class DeepQNetwork:
             self,
             n_actions,
             n_features,
+            action_space,
             learning_rate=0.01,
             reward_decay=0.9,
             e_greedy=0.9,
@@ -35,6 +36,7 @@ class DeepQNetwork:
     ):
         self.n_actions = n_actions
         self.n_features = n_features
+        self.action_space = action_space
         self.lr = learning_rate
         self.gamma = reward_decay
         self.epsilon_max = e_greedy
@@ -128,11 +130,24 @@ class DeepQNetwork:
         observation = observation[np.newaxis, :]
 
         if np.random.uniform() < self.epsilon:
+
             # forward feed the observation and get q value for every actions
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
-            action = np.argmax(actions_value)
+            while True:
+                action_n = np.argmax(actions_value)
+                valid_action = True
+                for i in range(0, self.n_flights):
+                    if  'reached'+ str(i) in observation:
+                        if self.action_space[action_n][i] != 's':
+                            actions_value[action_n] = 0;
+                            valid_action = False
+                            break
+                if valid_action == True:
+                    action = self.action_space[action_n]
+                    break
+
         else:
-            action = np.random.randint(0, self.n_actions)
+            action = np.random.choice(self.action_space)
         return action
 
     def learn(self):
