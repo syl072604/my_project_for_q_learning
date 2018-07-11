@@ -24,6 +24,7 @@ class DeepQNetwork:
             self,
             n_actions,
             n_features,
+            n_flights,
             action_space,
             learning_rate=0.01,
             reward_decay=0.9,
@@ -36,6 +37,7 @@ class DeepQNetwork:
     ):
         self.n_actions = n_actions
         self.n_features = n_features
+        self.n_flights = n_flights
         self.action_space = action_space
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -75,7 +77,7 @@ class DeepQNetwork:
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables
             c_names, n_l1, w_initializer, b_initializer = \
-                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 10, \
+                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 20, \
                 tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
             # first layer. collections is used later when assign to target net
@@ -134,20 +136,19 @@ class DeepQNetwork:
             # forward feed the observation and get q value for every actions
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             while True:
-                action_n = np.argmax(actions_value)
+                action = np.argmax(actions_value)
                 valid_action = True
                 for i in range(0, self.n_flights):
-                    if  'reached'+ str(i) in observation:
-                        if self.action_space[action_n][i] != 's':
-                            actions_value[action_n] = 0;
+                    if  observation[2*i:2*i+2] == [999, 999]:
+                        if self.action_space[action][i] != 's':
+                            actions_value[action] = -1
                             valid_action = False
                             break
-                if valid_action == True:
-                    action = self.action_space[action_n]
-                    break
+                if valid_action:
+                     break
 
         else:
-            action = np.random.choice(self.action_space)
+            action = np.random.randint(0, self.n_actions)
         return action
 
     def learn(self):

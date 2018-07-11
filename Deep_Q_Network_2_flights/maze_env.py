@@ -39,13 +39,17 @@ class Maze(tk.Tk, object):
         self.action_type_extend = []
         self.n_action_type = len(self.action_type)
 
-        self.n_actions = self.n_action_type**self.n_flights
+        self.n_actions = self.n_action_type**self.n_flights - 1
 
         for i in range(0, self.n_flights):
             self.action_type_extend.extend(self.action_type)
 
         self.action_space = list(set(list(permutations(self.action_type_extend, self.n_flights))))
-        self.action_space.sort();
+        self.action_space.sort()
+        stay = []
+        for i in range(0, self.n_flights):
+            stay.extend('s')
+        self.action_space.remove(tuple(stay))
         # ['uuu', 'uud', 'uul', 'uur', 'uus',
         #  'udu', 'udd', 'udl', 'udr', 'uds',
         #  'ulu', 'uld', 'ull', 'ulr', 'uls',
@@ -81,7 +85,7 @@ class Maze(tk.Tk, object):
         origin = np.array([20, 20])
 
         for i in range(0,self.n_flights):
-            oval_center = origin + UNIT * (MAZE_H-1-i)
+            oval_center = origin + np.array([UNIT * (MAZE_H - 1 - i), UNIT * (MAZE_H-1)])
             ovals['oval'+str(i)] = self.canvas.create_oval(
                 oval_center[0] - 15, oval_center[1] - 15,
                 oval_center[0] + 15, oval_center[1] + 15,
@@ -114,9 +118,9 @@ class Maze(tk.Tk, object):
         self.canvas.delete(self.flag)
         r = []
         for i in range(0, self.n_flights):
-            r.append(self.canvas.coords(rects['rect'+str(i)]))
+            r.extend((np.array(self.canvas.coords(rects['rect'+str(i)])[:2]) - np.array([5, 5]))/UNIT)
         # return observation
-        return r
+        return np.array(r)
 
     def step(self, action):
         states = locals()
@@ -139,21 +143,21 @@ class Maze(tk.Tk, object):
             self.canvas.move(rects['rect'+str(i)], base_action[0], base_action[1])  # move agent
 
         s_ = []
+        ss_ = []
         for i in range(0, self.n_flights):
-            s_.append(self.canvas.coords(rects['rect'+str(i)]))
-
+            s_.extend((np.array(self.canvas.coords(rects['rect'+str(i)])[:2]) - np.array([5, 5]))/UNIT)
+            ss_.append(self.canvas.coords(rects['rect' + str(i)]))
         # reward function
 
         reached_flag = True
         for i in range(0, self.n_flights):
-            if s_[i] != self.canvas.coords(ovals['oval'+str(i)]):
+            if ss_[i] != self.canvas.coords(ovals['oval'+str(i)]):
                 reached_flag = False
                 break
 
         if reached_flag == True:
             reward = 1
             done = True
-            s_ = 'terminal'
             origin = np.array([20, 20])
             self.flag= self.canvas.create_rectangle(
                 origin[0] + UNIT * 3 - 15, origin[1] - 15,
@@ -163,15 +167,15 @@ class Maze(tk.Tk, object):
              reward = 0
              done = False
              for i in range(0, self.n_flights):
-                if s_.count(s_[i]) > 1:
+                if ss_.count(ss_[i]) > 1:
                     reward = -1
                     done = True
-                    s_ = 'terminal'
                     break
-                elif s_[i] == self.canvas.coords(ovals['oval'+str(i)]):
-                    s_[i] = 'reached' + str(i)
+                elif ss_[i] == self.canvas.coords(ovals['oval'+str(i)]):
+                    s_[2 * i] = 999
+                    s_[2 * i + 1] = 999
 
-        return s_, reward, done
+        return np.array(s_), reward, done
 
     def render(self):
         time.sleep(0.1)
