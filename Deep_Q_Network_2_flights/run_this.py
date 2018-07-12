@@ -1,13 +1,16 @@
 from maze_env import Maze
 from RL_brain import DeepQNetwork
+import numpy as np
 
 
 def run_maze():
     step = 0
-    for episode in range(300):
+    achieved_step_min = 1000
+    for episode in range(1000):
         # initial observation
         observation = env.reset()
-
+        action_record = ''
+        action_step = 0
         while True:
             # fresh env
             env.render()
@@ -16,17 +19,29 @@ def run_maze():
             action = RL.choose_action(observation)
 
             # RL take action and get next observation and reward
-            observation_, reward, done = env.step(action)
+            observation_, reward, done, achieved = env.step(action)
+
+            if (observation_ == observation).all():
+                continue
 
             RL.store_transition(observation, action, reward, observation_)
 
             if (step > 200) and (step % 5 == 0):
                 RL.learn()
 
-            # swap observation
             observation = observation_
 
-            # break while loop when end of this episode
+            action_step += 1
+
+            action_record = action_record + str(env.action_space[action]) + '\n'
+
+            if achieved:
+                if action_step<achieved_step_min:
+                    file = open('action_record.txt','w')
+                    achieved_step_min = action_step
+                    file.write(str(achieved_step_min) + '\n' + action_record )
+                    file.close()
+
             if done:
                 break
             step += 1

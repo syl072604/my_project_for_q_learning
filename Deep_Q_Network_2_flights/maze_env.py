@@ -144,38 +144,45 @@ class Maze(tk.Tk, object):
 
         s_ = []
         ss_ = []
+        ss_ovals = []
         for i in range(0, self.n_flights):
             s_.extend((np.array(self.canvas.coords(rects['rect'+str(i)])[:2]) - np.array([5, 5]))/UNIT)
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
+            ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
         # reward function
 
-        reached_flag = True
+        reward = 0
+        done = False
+        achieved = False
         for i in range(0, self.n_flights):
-            if ss_[i] != self.canvas.coords(ovals['oval'+str(i)]):
-                reached_flag = False
+            if ss_.count(ss_[i]) > 1:
+                reward = -1
+                done = True
                 break
 
-        if reached_flag == True:
-            reward = 1
-            done = True
-            origin = np.array([20, 20])
-            self.flag= self.canvas.create_rectangle(
-                origin[0] + UNIT * 3 - 15, origin[1] - 15,
-                origin[0] + UNIT * 3 + 15, origin[1] + 15,
-                fill='blue')
-        else:
-             reward = 0
-             done = False
-             for i in range(0, self.n_flights):
-                if ss_.count(ss_[i]) > 1:
-                    reward = -1
-                    done = True
+        if not done:
+            reached_flag = True
+            for i in range(0, self.n_flights):
+                if ss_[i] not in ss_ovals:
+                    reached_flag = False
                     break
-                elif ss_[i] == self.canvas.coords(ovals['oval'+str(i)]):
-                    s_[2 * i] = 999
-                    s_[2 * i + 1] = 999
 
-        return np.array(s_), reward, done
+            if reached_flag:
+                reward = 1
+                done = True
+                achieved = True
+                origin = np.array([20, 20])
+                self.flag= self.canvas.create_rectangle(
+                    origin[0] + UNIT * 3 - 15, origin[1] - 15,
+                    origin[0] + UNIT * 3 + 15, origin[1] + 15,
+                    fill='blue')
+        if not done:
+            for i in range(0, self.n_flights):
+                if ss_[i] in ss_ovals:
+                     s_[2 * i] = 999
+                     s_[2 * i + 1] = 999
+
+        return np.array(s_), reward, done, achieved
 
     def render(self):
         time.sleep(0.1)
@@ -187,7 +194,7 @@ def update():
         s = env.reset()
         while True:
             env.render()
-            a = 2
+            a = 23
             s, r, done = env.step(a)
             if done:
                 break
