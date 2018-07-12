@@ -38,7 +38,7 @@ class Maze(tk.Tk, object):
         self.action_type = ['u', 'd', 'l', 'r', 's']
         self.action_type_extend = []
         self.n_action_type = len(self.action_type)
-
+        self.maze_space = [MAZE_W-1, MAZE_H-1]
         self.n_actions = self.n_action_type**self.n_flights - 1
 
         for i in range(0, self.n_flights):
@@ -176,11 +176,11 @@ class Maze(tk.Tk, object):
                     origin[0] + UNIT * 3 - 15, origin[1] - 15,
                     origin[0] + UNIT * 3 + 15, origin[1] + 15,
                     fill='blue')
-        if not done:
-            for i in range(0, self.n_flights):
-                if ss_[i] in ss_ovals:
-                     s_[2 * i] = 999
-                     s_[2 * i + 1] = 999
+        # if not done:
+        #     for i in range(0, self.n_flights):
+        #         if ss_[i] in ss_ovals:
+        #              s_[2 * i] = 999
+        #              s_[2 * i + 1] = 999
 
         return np.array(s_), reward, done, achieved
 

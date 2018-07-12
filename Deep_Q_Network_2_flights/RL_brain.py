@@ -32,12 +32,13 @@ class DeepQNetwork:
             replace_target_iter=300,
             memory_size=500,
             batch_size=32,
-            e_greedy_increment=0.005,
+            e_greedy_increment=0.01,
             output_graph=True,
     ):
         self.n_actions = n_actions
         self.n_features = n_features
         self.n_flights = n_flights
+        self.maze_space = np.array([3,3])
         self.action_space = action_space
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -139,11 +140,32 @@ class DeepQNetwork:
                 action = np.argmax(actions_value)
                 valid_action = True
                 for i in range(0, self.n_flights):
-                    if  observation[2*i:2*i+2] == [999, 999]:
-                        if self.action_space[action][i] != 's':
-                            actions_value[action] = -1
+                    # if  (observation[0][2*i:2*i+2] == np.array([999, 999])).all():
+                    #     if self.action_space[action][i] != 's':
+                    #         actions_value[0][action] -= 10000
+                    #         valid_action = False
+                    #         break
+                    if (observation[0][2*i] == 0).all():
+                        if self.action_space[action][i] == 'l':
+                            actions_value[0][action] -=10000
                             valid_action = False
                             break
+                    if (observation[0][2*i] == self.maze_space[0]).all():
+                        if self.action_space[action][i] == 'r':
+                            actions_value[0][action] -= 10000
+                            valid_action = False
+                            break
+                    if (observation[0][2*i+1] == 0).all():
+                        if self.action_space[action][i] == 'u':
+                            actions_value[0][action] -= 10000
+                            valid_action = False
+                            break
+                    if (observation[0][2*i+1] == self.maze_space[1]).all():
+                        if self.action_space[action][i] == 'd':
+                            actions_value[0][action] -= 10000
+                            valid_action = False
+                            break
+
                 if valid_action:
                      break
 
