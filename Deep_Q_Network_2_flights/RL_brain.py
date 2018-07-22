@@ -25,6 +25,7 @@ class DeepQNetwork:
             n_actions,
             n_features,
             n_flights,
+            maze_space,
             action_space,
             learning_rate=0.01,
             reward_decay=0.9,
@@ -38,7 +39,7 @@ class DeepQNetwork:
         self.n_actions = n_actions
         self.n_features = n_features
         self.n_flights = n_flights
-        self.maze_space = np.array([3,3])
+        self.maze_space = np.array(maze_space)
         self.action_space = action_space
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -48,7 +49,7 @@ class DeepQNetwork:
         self.batch_size = batch_size
         self.epsilon_increment = e_greedy_increment
         self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
-
+        self.last_action = 0
         # total learning step
         self.learn_step_counter = 0
 
@@ -122,11 +123,12 @@ class DeepQNetwork:
 
         transition = np.hstack((s, [a, r], s_))
 
-        # replace the old memory with new memory
-        index = self.memory_counter % self.memory_size
-        self.memory[index, :] = transition
+        if (transition.tolist() not in self.memory.tolist()):
+            # replace the old memory with new memory
+            index = self.memory_counter % self.memory_size
+            self.memory[index, :] = transition
+            self.memory_counter += 1
 
-        self.memory_counter += 1
 
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
@@ -139,29 +141,33 @@ class DeepQNetwork:
             while True:
                 action = np.argmax(actions_value)
                 valid_action = True
+                against_action = True
                 for i in range(0, self.n_flights):
-                    # if  (observation[0][2*i:2*i+2] == np.array([999, 999])).all():
-                    #     if self.action_space[action][i] != 's':
-                    #         actions_value[0][action] -= 10000
-                    #         valid_action = False
-                    #         break
+                    if int(self.action_space[action][i]) +  int(self.action_space[self.last_action][i]) != 0:
+                        against_action = False
+
+                if against_action:
+                    action = np.random.randint(0, self.n_actions)
+
+                for i in range(0, self.n_flights):
+
                     if (observation[0][2*i] == 0).all():
-                        if self.action_space[action][i] == 'l':
+                        if self.action_space[action][i] == '-5':  #left
                             actions_value[0][action] -=10000
                             valid_action = False
                             break
                     if (observation[0][2*i] == self.maze_space[0]).all():
-                        if self.action_space[action][i] == 'r':
+                        if self.action_space[action][i] == '5':   #right
                             actions_value[0][action] -= 10000
                             valid_action = False
                             break
                     if (observation[0][2*i+1] == 0).all():
-                        if self.action_space[action][i] == 'u':
+                        if self.action_space[action][i] == '1':
                             actions_value[0][action] -= 10000
                             valid_action = False
                             break
                     if (observation[0][2*i+1] == self.maze_space[1]).all():
-                        if self.action_space[action][i] == 'd':
+                        if self.action_space[action][i] == '-1':
                             actions_value[0][action] -= 10000
                             valid_action = False
                             break
@@ -171,6 +177,8 @@ class DeepQNetwork:
 
         else:
             action = np.random.randint(0, self.n_actions)
+
+        self.last_action = action
         return action
 
     def learn(self):

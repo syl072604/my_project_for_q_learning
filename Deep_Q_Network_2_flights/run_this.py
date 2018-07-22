@@ -6,7 +6,7 @@ import numpy as np
 def run_maze():
     step = 0
     achieved_step_min = 1000
-    for episode in range(1000):
+    for episode in range(5000):
         # initial observation
         observation = env.reset()
         action_record = ''
@@ -44,6 +44,9 @@ def run_maze():
 
             if done:
                 break
+
+            if action_step > 200:
+                break
             step += 1
 
     # end of game
@@ -54,7 +57,7 @@ def run_maze():
 if __name__ == "__main__":
     # maze game
     env = Maze()
-    RL = DeepQNetwork(env.n_actions, env.n_features, env.n_flights,
+    RL = DeepQNetwork(env.n_actions, env.n_features, env.n_flights, env.maze_space,
                       action_space=env.action_space,
                       learning_rate=0.01,
                       reward_decay=0.9,

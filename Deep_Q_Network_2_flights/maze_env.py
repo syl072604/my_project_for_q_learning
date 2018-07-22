@@ -35,7 +35,7 @@ class Maze(tk.Tk, object):
         super(Maze, self).__init__()
         self.n_flights = 2
         self.n_features = 2 *self.n_flights
-        self.action_type = ['u', 'd', 'l', 'r', 's']
+        self.action_type = ['1', '-1', '5', '-5', '0']   #['u', 'd', 'r', 'l', 's']
         self.action_type_extend = []
         self.n_action_type = len(self.action_type)
         self.maze_space = [MAZE_W-1, MAZE_H-1]
@@ -48,7 +48,7 @@ class Maze(tk.Tk, object):
         self.action_space.sort()
         stay = []
         for i in range(0, self.n_flights):
-            stay.extend('s')
+            stay.extend('0')
         self.action_space.remove(tuple(stay))
         # ['uuu', 'uud', 'uul', 'uur', 'uus',
         #  'udu', 'udd', 'udl', 'udr', 'uds',
@@ -85,7 +85,7 @@ class Maze(tk.Tk, object):
         origin = np.array([20, 20])
 
         for i in range(0,self.n_flights):
-            oval_center = origin + np.array([UNIT * (MAZE_H - 1 - i), UNIT * (MAZE_H-1)])
+            oval_center = origin + np.array([UNIT * (MAZE_W - 1 - i), UNIT * (MAZE_H-1 - i)])
             ovals['oval'+str(i)] = self.canvas.create_oval(
                 oval_center[0] - 15, oval_center[1] - 15,
                 oval_center[0] + 15, oval_center[1] + 15,
@@ -128,16 +128,16 @@ class Maze(tk.Tk, object):
         for i in range(0, self.n_flights):
             states['s'+str(i)] = self.canvas.coords(rects['rect'+str(i)])
             base_action = np.array([0, 0])
-            if action_name[i] == 'u':   # up
+            if action_name[i] == '1':   # up
                 if states['s'+str(i)][1] > UNIT:
                     base_action[1] -= UNIT
-            elif action_name[i] == 'd':   # down
+            elif action_name[i] == '-1':   # down
                 if states['s'+str(i)][1] < (MAZE_H - 1) * UNIT:
                     base_action[1] += UNIT
-            elif action_name[i] == 'r':   # right
+            elif action_name[i] == '5':   # right
                 if states['s'+str(i)][0] < (MAZE_W - 1) * UNIT:
                     base_action[0] += UNIT
-            elif action_name[i] == 'l':   # left
+            elif action_name[i] == '-5':   # left
                 if states['s'+str(i)][0] > UNIT:
                     base_action[0] -= UNIT
             self.canvas.move(rects['rect'+str(i)], base_action[0], base_action[1])  # move agent
@@ -176,11 +176,7 @@ class Maze(tk.Tk, object):
                     origin[0] + UNIT * 3 - 15, origin[1] - 15,
                     origin[0] + UNIT * 3 + 15, origin[1] + 15,
                     fill='blue')
-        # if not done:
-        #     for i in range(0, self.n_flights):
-        #         if ss_[i] in ss_ovals:
-        #              s_[2 * i] = 999
-        #              s_[2 * i + 1] = 999
+
 
         return np.array(s_), reward, done, achieved
 
