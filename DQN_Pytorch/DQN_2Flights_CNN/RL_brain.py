@@ -109,6 +109,22 @@ class DQN(object):
         self.memory.push(s, a, r, s_)
 
     def choose_action(self, x):
+        b1 = np.argwhere(x==-1)
+        b2 = np.argwhere(x == 1)
+        b = b1-b2
+        action_nampe = []
+        for i in b:
+            if i[0] > 0:
+                action_nampe.extend['5'] # right
+            elif i[0] < 0:
+                action_nampe.extend['-5'] # left
+            elif i[1] > 0:
+                action_nampe.extend['-1']  # down
+            elif i[1] < 0:
+                action_nampe.extend['1']  # up
+            else:
+                action_nampe.extend['0']  # stay
+
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         # input only one sample

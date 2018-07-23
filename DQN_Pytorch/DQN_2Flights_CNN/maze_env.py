@@ -30,13 +30,13 @@ MAZE_W = 4  # grid width
 ovals = globals()
 rects = globals()
 
-origin_position = [[2,1],
+origin_position = [[0,3],
                    [1,2],
-                   [0,3],
+                   [2,1],
                    [3,0]]
-target_position = [[1,1],
+target_position = [[0,0],
+                   [1,1],
                    [2,2],
-                   [0,0],
                    [3,3]]
 
 class Maze(tk.Tk, object):
