@@ -19,9 +19,6 @@ import torch.nn.functional as F
 from collections import namedtuple
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-N_FEATURES = 4
-N_ACTIONS = 24
-
 BATCH_SIZE = 32
 LR = 0.01                   # learning rate
 EPSILON = 0.9               # greedy policy
@@ -111,42 +108,28 @@ class DQN(object):
         r = torch.FloatTensor([[r]])
         self.memory.push(s, a, r, s_)
 
-    def choose_action(self, x, reached_flights):
-        b1 = np.argwhere(x == -1)
-        b2 = np.argwhere(x > 1)
-        b3 = np.argwhere(1 > x > 0)
-        b = b1-b2
-
-        for j in b2:
-
-        action_name = []
-        for i in b:
-            if i[0] > 0:
-                action_name.append('5') # right
-            elif i[0] < 0:
-                action_name.append('-5') # left
-            elif i[1] > 0:
-                action_name.append('-1')  # down
-            elif i[1] < 0:
-                action_name.append('1')  # up
-            else:
-                action_name.append('0')  # stay
-
+    def choose_action(self, x, suggest_action_num):
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         # input only one sample
         if np.random.uniform() < self.epsilon:   # greedy
             actions_value = self.eval_net.forward(x)
             action = torch.max(actions_value, 1)[1].data.numpy()
+            max_value = torch.max(actions_value, 1)
             action = action[0]
+        elif np.random.uniform() < 0.5+0.5*self.epsilon and suggest_action_num < self.n_actions:
+            action = suggest_action_num
         else:   # random
-            action = self.action_space.index(tuple(action_name))
+            action = np.random.randint(0, self.n_actions)
+            # action = self.action_space.index(tuple(action_name))
+        action_name = self.action_space[action]
         return action
 
     def learn(self):
         # target parameter update
         if self.learn_step_counter % TARGET_REPLACE_ITER == 0:
             self.target_net.load_state_dict(self.eval_net.state_dict())
+            print('target net replaced')
 
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1

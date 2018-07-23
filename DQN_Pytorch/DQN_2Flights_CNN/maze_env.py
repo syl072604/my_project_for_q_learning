@@ -30,14 +30,14 @@ MAZE_W = 4  # grid width
 ovals = globals()
 rects = globals()
 
-origin_position = [[0,3],
+origin_position = [[0,0],
+                   [1,0],
+                   [2,0],
+                   [3,0]]
+target_position = [[1,1],
                    [1,2],
                    [2,1],
-                   [3,0]]
-target_position = [[0,0],
-                   [1,1],
-                   [2,2],
-                   [3,3]]
+                   [2,2]]
 
 class Maze(tk.Tk, object):
     def __init__(self):
@@ -130,16 +130,31 @@ class Maze(tk.Tk, object):
 
         rect_map = np.zeros((MAZE_H, MAZE_W))
         oval_map = np.zeros((MAZE_H, MAZE_W))
-
+        ss_ = []
+        ss_ovals = []
+        suggest_action = []
         for i in range(0, self.n_flights):
             rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
-            rect_map[rect_index[1], rect_index[0]] = 1+0.01*(i+1)
+            rect_map[rect_index[1], rect_index[0]] = 1
             oval_map[oval_index[1], oval_index[0]] = 1
+            ss_.append(self.canvas.coords(rects['rect' + str(i)]))
+            ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
 
+            diff_ss = np.array(ss_ovals[i])[:2] - np.array(ss_[i])[:2]
+            if diff_ss[0] > 0:
+                suggest_action.append('5')  # right
+            elif diff_ss[0] < 0:
+                suggest_action.append('-5')  # left
+            elif diff_ss[1] > 0:
+                suggest_action.append('-1')  # down
+            elif diff_ss[1] < 0:
+                suggest_action.append('1')  # up
+
+        suggest_action_num = self.action_space.index(tuple(suggest_action))
         distance = rect_map - oval_map
         # return observation
-        return  distance
+        return  distance, suggest_action_num
 
     def step(self, action):
         states = locals()
@@ -182,17 +197,20 @@ class Maze(tk.Tk, object):
         for i in range(0, self.n_flights):
             rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
-            rect_map[rect_index[1], rect_index[0]] = 1+0.01*i
-            oval_map[oval_index[1], oval_index[0]] = -(1+0.01*i)
+            rect_map[rect_index[1], rect_index[0]] = 1
+            oval_map[oval_index[1], oval_index[0]] = 1
 
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
             ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
+            free_ss_ovals = ss_ovals
         # reward function
         s_ = rect_map - oval_map
         reward = 0
         done = False
         achieved = False
-        reached_flights = np.zeros((1, self.n_flights))
+        suggest_action = []
+        stay_index = []
+        suggest_action_num = self.n_actions
         if out_of_bond:
             reward = -1
             done = True
@@ -208,9 +226,11 @@ class Maze(tk.Tk, object):
             for i in range(0, self.n_flights):
                 if ss_[i] not in ss_ovals:
                     reached_flag = False
-                    break
                 else:
-                    reached_flights[i] = 1
+                    # reward = reward + 1/self.n_flights/self.n_flights
+                    free_ss_ovals.remove(ss_[i])
+                    stay_index.extend([i])
+
 
             if reached_flag:
                 reward = 1
@@ -221,9 +241,24 @@ class Maze(tk.Tk, object):
                     origin[0] + UNIT * 3 - 15, origin[1] - 15,
                     origin[0] + UNIT * 3 + 15, origin[1] + 15,
                     fill='blue')
-
-
-        return s_, reward, done, achieved, reached_flights
+            else:
+                free_ss_count = 0
+                for i in range(0, self.n_flights):
+                    if i not in stay_index:
+                        diff_ss = np.array(free_ss_ovals[free_ss_count])[:2] - np.array(ss_[i])[:2]
+                        if diff_ss[0] > 0:
+                            suggest_action.append('5')                             # right
+                        elif diff_ss[0] < 0:
+                            suggest_action.append('-5')                             # left
+                        elif diff_ss[1] > 0:
+                            suggest_action.append('-1')                             # down
+                        elif diff_ss[1] < 0:
+                            suggest_action.append('1')                             # up
+                        free_ss_count = free_ss_count + 1
+                    else:
+                        suggest_action.append('0')                                 # stay
+                suggest_action_num = self.action_space.index(tuple(suggest_action))
+        return s_, reward, done, achieved, suggest_action_num
 
     def render(self):
         time.sleep(0.1)

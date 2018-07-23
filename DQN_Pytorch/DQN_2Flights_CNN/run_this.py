@@ -6,7 +6,7 @@ def run_maze():
     achieved_step_min = 1000
     for episode in range(5000):
         # initial observation
-        observation = env.reset()
+        observation, suggest_action_num = env.reset()
         action_record = ''
         action_step = 0
         while True:
@@ -14,10 +14,10 @@ def run_maze():
             env.render()
 
             # RL choose action based on observation
-            action = RL.choose_action(observation, reached_flights)
+            action = RL.choose_action(observation, suggest_action_num)
 
             # RL take action and get next observation and reward
-            observation_, reward, done, achieved, reached_flights = env.step(action)
+            observation_, reward, done, achieved, suggest_action_num = env.step(action)
 
             RL.store_transition(observation, action, reward, observation_)
 
