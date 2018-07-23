@@ -14,10 +14,10 @@ def run_maze():
             env.render()
 
             # RL choose action based on observation
-            action = RL.choose_action(observation)
+            action = RL.choose_action(observation, reached_flights)
 
             # RL take action and get next observation and reward
-            observation_, reward, done, achieved = env.step(action)
+            observation_, reward, done, achieved, reached_flights = env.step(action)
 
             RL.store_transition(observation, action, reward, observation_)
 
@@ -52,6 +52,6 @@ def run_maze():
 if __name__ == "__main__":
     # maze game
     env = Maze()
-    RL = DQN()
+    RL = DQN(n_actions=env.n_actions, n_features=env.n_features, n_flights=env.n_flights,action_space=env.action_space)
     env.after(100, run_maze)
     env.mainloop()

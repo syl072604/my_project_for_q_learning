@@ -134,7 +134,7 @@ class Maze(tk.Tk, object):
         for i in range(0, self.n_flights):
             rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
-            rect_map[rect_index[1], rect_index[0]] = 1
+            rect_map[rect_index[1], rect_index[0]] = 1+0.01*(i+1)
             oval_map[oval_index[1], oval_index[0]] = 1
 
         distance = rect_map - oval_map
@@ -182,8 +182,8 @@ class Maze(tk.Tk, object):
         for i in range(0, self.n_flights):
             rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
-            rect_map[rect_index[1], rect_index[0]] = 1
-            oval_map[oval_index[1], oval_index[0]] = 1
+            rect_map[rect_index[1], rect_index[0]] = 1+0.01*i
+            oval_map[oval_index[1], oval_index[0]] = -(1+0.01*i)
 
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
             ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
@@ -192,6 +192,7 @@ class Maze(tk.Tk, object):
         reward = 0
         done = False
         achieved = False
+        reached_flights = np.zeros((1, self.n_flights))
         if out_of_bond:
             reward = -1
             done = True
@@ -208,6 +209,8 @@ class Maze(tk.Tk, object):
                 if ss_[i] not in ss_ovals:
                     reached_flag = False
                     break
+                else:
+                    reached_flights[i] = 1
 
             if reached_flag:
                 reward = 1
@@ -220,7 +223,7 @@ class Maze(tk.Tk, object):
                     fill='blue')
 
 
-        return s_, reward, done, achieved
+        return s_, reward, done, achieved, reached_flights
 
     def render(self):
         time.sleep(0.1)

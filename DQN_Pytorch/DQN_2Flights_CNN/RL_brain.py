@@ -58,7 +58,7 @@ class ReplayMemory(object):
         return len(self.memory)
 
 class CNN(nn.Module):
-    def __init__(self):
+    def __init__(self, n_actions):
         super(CNN, self).__init__()
         self.conv1 = nn.Sequential(         # input shape (1, 4, 4)
             nn.Conv2d(
@@ -76,7 +76,7 @@ class CNN(nn.Module):
             nn.ReLU(),                      # activation
             nn.MaxPool2d(2),                # output shape (8, 1, 1)
         )
-        self.out = nn.Linear(8 * 1 * 1, N_ACTIONS)   # fully connected layer, output 24 classes
+        self.out = nn.Linear(8 * 1 * 1, n_actions)   # fully connected layer, output over 600 classes
 
     def forward(self, x):
         x = self.conv1(x)
@@ -87,9 +87,12 @@ class CNN(nn.Module):
 
 
 class DQN(object):
-    def __init__(self):
-        self.eval_net, self.target_net = CNN(), CNN()
-
+    def __init__(self, n_actions, n_features, n_flights, action_space):
+        self.n_actions = n_actions
+        self.n_features = n_features
+        self.n_flights = n_flights
+        self.action_space = action_space
+        self.eval_net, self.target_net = CNN(self.n_actions), CNN(self.n_actions)
         self.learn_step_counter = 0                                     # for target updating
         self.epsilon = 0
         self.epsilon_max = EPSILON
@@ -108,22 +111,26 @@ class DQN(object):
         r = torch.FloatTensor([[r]])
         self.memory.push(s, a, r, s_)
 
-    def choose_action(self, x):
-        b1 = np.argwhere(x==-1)
-        b2 = np.argwhere(x == 1)
+    def choose_action(self, x, reached_flights):
+        b1 = np.argwhere(x == -1)
+        b2 = np.argwhere(x > 1)
+        b3 = np.argwhere(1 > x > 0)
         b = b1-b2
-        action_nampe = []
+
+        for j in b2:
+
+        action_name = []
         for i in b:
             if i[0] > 0:
-                action_nampe.extend['5'] # right
+                action_name.append('5') # right
             elif i[0] < 0:
-                action_nampe.extend['-5'] # left
+                action_name.append('-5') # left
             elif i[1] > 0:
-                action_nampe.extend['-1']  # down
+                action_name.append('-1')  # down
             elif i[1] < 0:
-                action_nampe.extend['1']  # up
+                action_name.append('1')  # up
             else:
-                action_nampe.extend['0']  # stay
+                action_name.append('0')  # stay
 
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
@@ -133,7 +140,7 @@ class DQN(object):
             action = torch.max(actions_value, 1)[1].data.numpy()
             action = action[0]
         else:   # random
-            action = np.random.randint(0, N_ACTIONS)
+            action = self.action_space.index(tuple(action_name))
         return action
 
     def learn(self):
