@@ -37,8 +37,8 @@
       <file leaf-file-name="RL_brain.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/RL_brain.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="262">
-              <caret line="77" column="52" lean-forward="true" selection-start-line="77" selection-start-column="12" selection-end-line="77" selection-end-column="52" />
+            <state relative-caret-position="703">
+              <caret line="77" column="52" selection-start-line="77" selection-start-column="12" selection-end-line="77" selection-end-column="52" />
               <folding>
                 <element signature="e#261#279#0" expanded="true" />
               </folding>
@@ -49,7 +49,7 @@
       <file leaf-file-name="run_this.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/run_this.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="171">
+            <state relative-caret-position="-374">
               <caret line="9" column="26" selection-start-line="9" selection-start-column="26" selection-end-line="9" selection-end-column="26" />
               <folding>
                 <element signature="e#0#25#0" expanded="true" />
@@ -104,9 +104,9 @@
     <packageJsonPaths />
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="355" />
-    <option name="y" value="-24" />
-    <option name="width" value="1169" />
+    <option name="x" value="52" />
+    <option name="y" value="-25" />
+    <option name="width" value="1193" />
     <option name="height" value="1050" />
   </component>
   <component name="ProjectView">
@@ -288,17 +288,17 @@
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.45726496" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Python Console" order="7" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.45726496" />
       <window_info anchor="bottom" id="Terminal" order="7" weight="0.32905984" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1300268" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1313673" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info anchor="right" id="SciView" order="3" weight="0.31769437" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.41285402" />
       <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.41285402" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -678,7 +678,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/run_this.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
+        <state relative-caret-position="-374">
           <caret line="9" column="26" selection-start-line="9" selection-start-column="26" selection-end-line="9" selection-end-column="26" />
           <folding>
             <element signature="e#0#25#0" expanded="true" />
@@ -688,8 +688,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/RL_brain.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="262">
-          <caret line="77" column="52" lean-forward="true" selection-start-line="77" selection-start-column="12" selection-end-line="77" selection-end-column="52" />
+        <state relative-caret-position="703">
+          <caret line="77" column="52" selection-start-line="77" selection-start-column="12" selection-end-line="77" selection-end-column="52" />
           <folding>
             <element signature="e#261#279#0" expanded="true" />
           </folding>

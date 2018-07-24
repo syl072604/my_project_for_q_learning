@@ -31,7 +31,7 @@ np.random.seed(1)
 tf.set_random_seed(1)
 
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'reward', 'next_state'))
+                        ('state', 'action', 'reward', 'next_state', 'td_error'))
 
 
 class ReplayMemory(object):
@@ -41,15 +41,27 @@ class ReplayMemory(object):
         self.memory = []
         self.position = 0
 
-    def push(self, *args):
+    def push(self, mem):
         """Saves a transition."""
         if len(self.memory) < self.capacity:
             self.memory.append(None)
-        self.memory[self.position] = Transition(*args)
+        self.memory[self.position] = mem
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+        self.memory = sorted(self.memory, key=lambda s: s[4], reverse=True)
+        m_index = list(range(0,batch_size//2))
+        length = len(self.memory)
+        m_index.extend(random.sample(range(batch_size//2,length), batch_size//2))
+        mem_sampled = []
+        for i in m_index:
+            mem_sampled.append(self.memory[i])
+        return mem_sampled, m_index
+
+    def update(self, m_index, abs_errors):
+        for i,td_e in zip(m_index, abs_errors):
+            self.memory[i][4] =td_e
+            # print(self.memory[i][4])
 
     def __len__(self):
         return len(self.memory)
@@ -57,28 +69,33 @@ class ReplayMemory(object):
 class CNN(nn.Module):
     def __init__(self, n_actions):
         super(CNN, self).__init__()
-        self.conv1 = nn.Sequential(         # input shape (1, 4, 4)
+        self.conv1 = nn.Sequential(         # input shape (1, 8, 8)
             nn.Conv2d(
                 in_channels=1,              # input height
-                out_channels=4,            # n_filters
+                out_channels=8,             # n_filters
                 kernel_size=5,              # filter size
                 stride=1,                   # filter movement/step
                 padding=2,                  # if want same width and length of this image after con2d, padding=(kernel_size-1)/2 if stride=1
-            ),                              # output shape (4, 4, 4)
+            ),                              # output shape (8, 8, 8)
             nn.ReLU(),                      # activation
             nn.MaxPool2d(kernel_size=2),    # choose max value in 2x2 area, output shape (16, 14, 14)
         )
-        self.conv2 = nn.Sequential(         # input shape (4, 2, 2)
-            nn.Conv2d(4, 8, 5, 1, 2),     # output shape (8, 2, 2)
+        self.conv2 = nn.Sequential(         # input shape (8, 4, 4)
+            nn.Conv2d(8, 16, 5, 1, 2),     # output shape (16, 4, 4)
             nn.ReLU(),                      # activation
-            nn.MaxPool2d(2),                # output shape (8, 1, 1)
+            nn.MaxPool2d(2),                # output shape (16, 2, 2)
         )
-        self.out = nn.Linear(8 * 1 * 1, n_actions)   # fully connected layer, output over 600 classes
+        self.fc1 = nn.Linear(16 * 2 * 2, 50)
+        self.fc1.weight.data.normal_(0, 0.1)  # initialization
+        self.out = nn.Linear(50, n_actions)   # fully connected layer, output over 600 classes
+        self.out.weight.data.normal_(0, 0.1)  # initialization
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(x.size(0), -1)           # flatten the output of conv2 to (batch_size, 32 * 7 * 7)
+        x = self.fc1(x)
+        x = F.relu(x)
         output = self.out(x)
         return output    # return x for visualization
 
@@ -106,7 +123,7 @@ class DQN(object):
         s_ = torch.unsqueeze(torch.FloatTensor(s_), 0)
         a = torch.LongTensor([[a]])
         r = torch.FloatTensor([[r]])
-        self.memory.push(s, a, r, s_)
+        self.memory.push([s, a, r, s_, 0.8])
 
     def choose_action(self, x, suggest_action_num):
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
@@ -136,7 +153,7 @@ class DQN(object):
 
         if len(self.memory) < BATCH_SIZE:
             return
-        transitions = self.memory.sample(BATCH_SIZE)
+        transitions, m_index = self.memory.sample(BATCH_SIZE)
         # Transpose the batch (see http://stackoverflow.com/a/19343/3343043 for
         # detailed explanation).
         batch = Transition(*zip(*transitions))
@@ -150,7 +167,9 @@ class DQN(object):
         q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
         test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
         q_target = b_r + test_a   # shape (batch, 1)
+        abs_errors = torch.abs(q_target - q_eval).view(BATCH_SIZE).data.numpy()
         loss = self.loss_func(q_eval, q_target)
+        self.memory.update(m_index, abs_errors)
 
         self.optimizer.zero_grad()
         loss.backward()
