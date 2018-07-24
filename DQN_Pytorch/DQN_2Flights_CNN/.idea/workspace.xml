@@ -311,14 +311,23 @@
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.45726496" />
+<<<<<<< Updated upstream
       <window_info anchor="bottom" id="Terminal" order="7" weight="0.32716927" />
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.10726257" />
+=======
+      <window_info active="true" anchor="bottom" id="Terminal" order="7" visible="true" weight="0.32897604" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.15138593" />
+>>>>>>> Stashed changes
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info anchor="right" id="SciView" order="3" weight="0.2660858" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
+<<<<<<< Updated upstream
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4110953" />
+=======
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.41285402" />
+>>>>>>> Stashed changes
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -663,8 +672,13 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/maze_env.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
         <state relative-caret-position="-791">
           <caret line="35" column="23" selection-start-line="35" selection-start-column="23" selection-end-line="35" selection-end-column="23" />
+=======
+        <state relative-caret-position="-1177">
+          <caret line="139" column="38" lean-forward="true" selection-start-line="139" selection-start-column="38" selection-end-line="139" selection-end-column="38" />
+>>>>>>> Stashed changes
           <folding>
             <element signature="e#386#396#0" expanded="true" />
           </folding>
