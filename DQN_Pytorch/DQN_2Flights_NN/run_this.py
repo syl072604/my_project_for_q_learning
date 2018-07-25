@@ -6,7 +6,7 @@ def run_maze():
     achieved_step_min = 1000
     for episode in range(5000):
         # initial observation
-        observation = env.reset()
+        observation, suggest_action_num = env.reset()
         action_record = ''
         action_step = 0
         while True:
@@ -14,14 +14,19 @@ def run_maze():
             env.render()
 
             # RL choose action based on observation
-            action = RL.choose_action(observation)
+            action = RL.choose_action(observation, suggest_action_num)
 
+            if episode < 50:
+                ignore_crash = True
+            else:
+                ignore_crash = False
             # RL take action and get next observation and reward
-            observation_, reward, done, achieved = env.step(action)
+            observation_, reward, done, achieved, suggest_action_num, can_be_stored = env.step(action, ignore_crash)
 
-            RL.store_transition(observation, action, reward, observation_)
+            if can_be_stored:
+                RL.store_transition(observation, action, reward, observation_)
 
-            if (step > 20) and (step % 5 == 0):
+            if (step > 200) and (step % 5 == 0):
                 RL.learn()
 
             observation = observation_
@@ -52,6 +57,6 @@ def run_maze():
 if __name__ == "__main__":
     # maze game
     env = Maze()
-    RL = DQN()
+    RL = DQN(n_actions=env.n_actions, n_features=env.n_features, n_flights=env.n_flights,action_space=env.action_space)
     env.after(100, run_maze)
     env.mainloop()

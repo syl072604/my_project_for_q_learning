@@ -4,7 +4,7 @@ from RL_brain import DQN
 def run_maze():
     step = 0
     achieved_step_min = 1000
-    for episode in range(5000):
+    for episode in range(200000):
         # initial observation
         observation, suggest_action_num = env.reset()
         action_record = ''

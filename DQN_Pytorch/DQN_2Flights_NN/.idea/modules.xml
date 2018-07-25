@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/5_Deep_Q_Network.iml" filepath="$PROJECT_DIR$/.idea/5_Deep_Q_Network.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/DQN_2Flights_NN.iml" filepath="$PROJECT_DIR$/.idea/DQN_2Flights_NN.iml" />
     </modules>
   </component>
 </project>

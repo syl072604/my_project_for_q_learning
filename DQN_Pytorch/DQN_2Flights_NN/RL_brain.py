@@ -53,9 +53,9 @@ class ReplayMemory(object):
 
     def sample(self, batch_size):
         self.memory = sorted(self.memory, key=lambda s: s[4], reverse=True)
-        m_index = list(range(0, batch_size//2))
+        m_index = list(range(0, batch_size//4))
         length = len(self.memory)
-        m_index.extend(random.sample(range(batch_size//2, length), batch_size//2))
+        m_index.extend(random.sample(range(batch_size//4, length), batch_size*3//4))
         mem_sampled = []
         for i in m_index:
             mem_sampled.append(self.memory[i])
@@ -69,34 +69,15 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
-class CNN(nn.Module):
-    def __init__(self, n_actions):
-        super(CNN, self).__init__()
-        self.conv1 = nn.Sequential(         # input shape (1, 4, 4)
-            nn.Conv2d(
-                in_channels=1,              # input height
-                out_channels=4,             # n_filters
-                kernel_size=5,              # filter size
-                stride=1,                   # filter movement/step
-                padding=2,                  # if want same width and length of this image after con2d, padding=(kernel_size-1)/2 if stride=1
-            ),                              # output shape (4, 4, 4)
-            nn.ReLU(),                      # activation
-            nn.MaxPool2d(kernel_size=2),    # choose max value in 2x2 area, output shape (4, 2, 2)
-        )
-        self.conv2 = nn.Sequential(         # input shape (4, 2, 2)
-            nn.Conv2d(4, 8, 5, 1, 2),     # output shape (8, 2, 2)
-            nn.ReLU(),                      # activation
-            nn.MaxPool2d(2),                # output shape (8, 1, 1)
-        )
-        self.fc1 = nn.Linear(8 * 1 * 1, 20)
+class NET(nn.Module):
+    def __init__(self, n_features, n_actions):
+        super(NET, self).__init__()
+        self.fc1 = nn.Linear(n_features, 50)
         self.fc1.weight.data.normal_(0, 0.1)  # initialization
-        self.out = nn.Linear(20, n_actions)   # fully connected layer, output over 600 classes
+        self.out = nn.Linear(50, n_actions)   # fully connected layer, output over 600 classes
         self.out.weight.data.normal_(0, 0.1)  # initialization
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = x.view(x.size(0), -1)           # flatten the output of conv2 to (batch_size, 8 * 1 * 1)
         x = self.fc1(x)
         x = F.relu(x)
         output = self.out(x)
@@ -109,7 +90,7 @@ class DQN(object):
         self.n_features = n_features
         self.n_flights = n_flights
         self.action_space = action_space
-        self.eval_net, self.target_net = CNN(self.n_actions), CNN(self.n_actions)
+        self.eval_net, self.target_net = NET(self.n_features, self.n_actions), NET(self.n_features,self.n_actions)
         self.learn_step_counter = 0                                     # for target updating
         self.epsilon = 0
         self.epsilon_max = EPSILON
@@ -121,15 +102,12 @@ class DQN(object):
 
     def store_transition(self, s, a, r, s_):
         s = torch.unsqueeze(torch.FloatTensor(s), 0)
-        s = torch.unsqueeze(torch.FloatTensor(s), 0)
-        s_ = torch.unsqueeze(torch.FloatTensor(s_), 0)
         s_ = torch.unsqueeze(torch.FloatTensor(s_), 0)
         a = torch.LongTensor([[a]])
         r = torch.FloatTensor([[r]])
-        self.memory.push([s, a, r, s_, 0.8])
+        self.memory.push([s, a, r, s_, 1])
 
     def choose_action(self, x, suggest_action_num):
-        x = torch.unsqueeze(torch.FloatTensor(x), 0)
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         # input only one sample
         if np.random.uniform() < self.epsilon:   # greedy
