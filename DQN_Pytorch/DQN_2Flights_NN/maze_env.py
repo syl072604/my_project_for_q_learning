@@ -24,28 +24,36 @@ else:
 
 
 UNIT = 40   # pixels
-MAZE_H = 4  # grid height
-MAZE_W = 4  # grid width
+MAZE_H = 6  # grid height
+MAZE_W = 6  # grid width
 
 ovals = globals()
 rects = globals()
 
-origin_position = [[0,0],
-                   [1,0],
-                   [2,0],
-                   [3,0]]
-target_position = [[1,3],
-                   [1,1],
-                   [3,1],
-                   [3,3]]
+origin_position = [[0, 0],
+                   [1, 0],
+                   [2, 2],
+                   [3, 2],
+                   [4, 4],
+                   [5, 4],
+                   ]
+target_position = [[1, 1],
+                   [3, 1],
+                   [1, 3],
+                   [3, 3],
+                   [1, 5],
+                   [3, 5],
+                  ]
+
 
 class Maze(tk.Tk, object):
+
     def __init__(self):
         super(Maze, self).__init__()
         self.crash = False
-        self.n_flights = 4
-        self.n_features = 2 *self.n_flights
-        self.action_type = ['s', 'u', 'd', 'r', 'l']   #['s, 'u', 'd', 'r', 'l']
+        self.n_flights = 6
+        self.n_features = 4 *self.n_flights
+        self.action_type = ['s', 'u', 'd', 'r', 'l']   # ['s, 'u', 'd', 'r', 'l']
         self.action_type_extend = []
         self.n_action_type = len(self.action_type)
         self.maze_space = [MAZE_W-1, MAZE_H-1]
@@ -120,7 +128,7 @@ class Maze(tk.Tk, object):
 
     def reset(self):
         self.update()
-        time.sleep(0.5)
+        time.sleep(0.1)
         origin = np.array([20, 20])
         for i in range(0, self.n_flights):
             self.canvas.delete(rects['rect'+str(i)])
@@ -140,8 +148,8 @@ class Maze(tk.Tk, object):
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
             ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
-            distance = oval_index - rect_index
-            s_.extend(distance)
+            comb = np.hstack((rect_index, oval_index))
+            s_.extend(comb)
             diff_ss = np.array(ss_ovals[i])[:2] - np.array(ss_[i])[:2]
 
             if diff_ss[0] > 0:                   # right
@@ -222,8 +230,8 @@ class Maze(tk.Tk, object):
         for i in range(0, self.n_flights):
             rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
-            distance = oval_index - rect_index
-            s_.extend(distance)
+            comb = np.hstack((rect_index, oval_index))
+            s_.extend(comb)
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
             ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
 
@@ -246,7 +254,7 @@ class Maze(tk.Tk, object):
                         done = False
                         self.crash = True
                     else:
-                        down = True
+                        done = True
                     break
 
         if not done:
@@ -256,7 +264,7 @@ class Maze(tk.Tk, object):
                     reached_flag = False
 
             if reached_flag:
-                reward = 1
+                reward = 1.5
                 done = True
                 achieved = True
                 origin = np.array([20, 20])
@@ -302,7 +310,7 @@ class Maze(tk.Tk, object):
         return s_, reward, done, achieved, suggest_action_num, can_be_stored
 
     def render(self):
-        time.sleep(0.1)
+        time.sleep(0.01)
         self.update()
 
 

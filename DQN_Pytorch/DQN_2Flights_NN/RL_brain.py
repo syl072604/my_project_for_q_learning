@@ -19,10 +19,10 @@ import torch.nn.functional as F
 from collections import namedtuple
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 LR = 0.01                   # learning rate
 EPSILON = 0.9               # greedy policy
-EPSILON_INCREMENT = 0.005
+EPSILON_INCREMENT = 0.002
 GAMMA = 0.9                 # reward discount
 TARGET_REPLACE_ITER = 100   # target update frequency
 MEMORY_CAPACITY = 2000
@@ -103,9 +103,10 @@ class DQN(object):
     def store_transition(self, s, a, r, s_):
         s = torch.unsqueeze(torch.FloatTensor(s), 0)
         s_ = torch.unsqueeze(torch.FloatTensor(s_), 0)
+        abs_error_int = torch.max(torch.abs(torch.FloatTensor([r, 0.8]))).data.numpy()
         a = torch.LongTensor([[a]])
         r = torch.FloatTensor([[r]])
-        self.memory.push([s, a, r, s_, 1])
+        self.memory.push([s, a, r, s_, abs_error_int])
 
     def choose_action(self, x, suggest_action_num):
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
@@ -145,9 +146,11 @@ class DQN(object):
 
         # q_eval w.r.t the action in experience
         q_eval = self.eval_net(b_s).gather(1, b_a)  # shape (batch, 1)
+        q_eval4next = self.eval_net(b_s_).detach()  # detach from graph, don't backpropagate
+        b_a_ = q_eval4next.max(1)[1].view(BATCH_SIZE, 1)
         q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
-        test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
-        q_target = b_r + test_a   # shape (batch, 1)
+        selected_q_next = q_next.gather(1, b_a_)
+        q_target = b_r + GAMMA*selected_q_next   # shape (batch, 1)
         abs_errors = torch.abs(q_target - q_eval).view(BATCH_SIZE).data.numpy()
         loss = self.loss_func(q_eval, q_target)
         self.memory.update(m_index, abs_errors)

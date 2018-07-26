@@ -4,7 +4,7 @@ from RL_brain import DQN
 def run_maze():
     step = 0
     achieved_step_min = 1000
-    for episode in range(5000):
+    for episode in range(500000):
         # initial observation
         observation, suggest_action_num = env.reset()
         action_record = ''
@@ -16,7 +16,7 @@ def run_maze():
             # RL choose action based on observation
             action = RL.choose_action(observation, suggest_action_num)
 
-            if episode < 50:
+            if episode < 500:
                 ignore_crash = True
             else:
                 ignore_crash = False
