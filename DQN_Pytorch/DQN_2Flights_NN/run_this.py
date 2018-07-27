@@ -9,19 +9,20 @@ def run_maze():
         observation, suggest_action_num = env.reset()
         action_record = ''
         action_step = 0
+        force_suggest = False
         while True:
             # fresh env
             env.render()
 
             # RL choose action based on observation
-            action = RL.choose_action(observation, suggest_action_num)
+            action = RL.choose_action(observation, suggest_action_num, force_suggest)
 
             if episode < 500:
                 ignore_crash = True
             else:
                 ignore_crash = False
             # RL take action and get next observation and reward
-            observation_, reward, done, achieved, suggest_action_num, can_be_stored = env.step(action, ignore_crash)
+            observation_, reward, done, achieved, suggest_action_num, can_be_stored, force_suggest = env.step(action, ignore_crash)
 
             if can_be_stored:
                 RL.store_transition(observation, action, reward, observation_)
@@ -45,7 +46,7 @@ def run_maze():
             if done:
                 break
 
-            if action_step > 200:
+            if action_step > 50:
                 break
             step += 1
 

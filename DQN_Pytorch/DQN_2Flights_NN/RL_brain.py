@@ -20,7 +20,7 @@ from collections import namedtuple
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BATCH_SIZE = 128
-LR = 0.01                   # learning rate
+LR = 0.02                   # learning rate
 EPSILON = 0.9               # greedy policy
 EPSILON_INCREMENT = 0.002
 GAMMA = 0.9                 # reward discount
@@ -108,16 +108,18 @@ class DQN(object):
         r = torch.FloatTensor([[r]])
         self.memory.push([s, a, r, s_, abs_error_int])
 
-    def choose_action(self, x, suggest_action_num):
+    def choose_action(self, x, suggest_action_num, force_suggest):
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         # input only one sample
-        if np.random.uniform() < self.epsilon:   # greedy
+        if np.random.uniform() < self.epsilon and not force_suggest:   # greedy
             actions_value = self.eval_net.forward(x)
             action = torch.max(actions_value, 1)[1].data.numpy()
             max_value = torch.max(actions_value, 1)
             action = action[0]
-        elif np.random.uniform() < 0.5+0.5*self.epsilon and suggest_action_num < self.n_actions:
+        elif (np.random.uniform() < 0.5+0.5*self.epsilon or force_suggest) and suggest_action_num < self.n_actions:
             action = suggest_action_num
+            # if force_suggest:
+                # print('force suggest works')
         else:   # random
             action = np.random.randint(0, self.n_actions)
             # action = self.action_space.index(tuple(action_name))
@@ -146,11 +148,17 @@ class DQN(object):
 
         # q_eval w.r.t the action in experience
         q_eval = self.eval_net(b_s).gather(1, b_a)  # shape (batch, 1)
+
         q_eval4next = self.eval_net(b_s_).detach()  # detach from graph, don't backpropagate
         b_a_ = q_eval4next.max(1)[1].view(BATCH_SIZE, 1)
         q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
         selected_q_next = q_next.gather(1, b_a_)
         q_target = b_r + GAMMA*selected_q_next   # shape (batch, 1)
+
+        # q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
+        # test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
+        # q_target = b_r + test_a   # shape (batch, 1)
+
         abs_errors = torch.abs(q_target - q_eval).view(BATCH_SIZE).data.numpy()
         loss = self.loss_func(q_eval, q_target)
         self.memory.update(m_index, abs_errors)

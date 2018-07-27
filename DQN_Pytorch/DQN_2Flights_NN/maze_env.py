@@ -16,6 +16,7 @@ import sys
 import time
 import random
 import numpy as np
+import operator
 from itertools import permutations
 if sys.version_info.major == 2:
     import Tkinter as tk
@@ -24,8 +25,8 @@ else:
 
 
 UNIT = 40   # pixels
-MAZE_H = 6  # grid height
-MAZE_W = 6  # grid width
+MAZE_H = 4  # grid height
+MAZE_W = 4  # grid width
 
 ovals = globals()
 rects = globals()
@@ -34,15 +35,15 @@ origin_position = [[0, 0],
                    [1, 0],
                    [2, 2],
                    [3, 2],
-                   [4, 4],
-                   [5, 4],
+                   # [4, 4],
+                   # [5, 4],
                    ]
 target_position = [[1, 1],
                    [3, 1],
                    [1, 3],
                    [3, 3],
-                   [1, 5],
-                   [3, 5],
+                   # [1, 5],
+                   # [3, 5],
                   ]
 
 
@@ -51,7 +52,7 @@ class Maze(tk.Tk, object):
     def __init__(self):
         super(Maze, self).__init__()
         self.crash = False
-        self.n_flights = 6
+        self.n_flights = 4
         self.n_features = 4 *self.n_flights
         self.action_type = ['s', 'u', 'd', 'r', 'l']   # ['s, 'u', 'd', 'r', 'l']
         self.action_type_extend = []
@@ -67,10 +68,10 @@ class Maze(tk.Tk, object):
                 action_name.extend(self.action_type[a])
                 n = n % self.n_action_type**(self.n_flights-j)
             self.action_space.append(action_name)
-        # stay = []
-        # for i in range(0, self.n_flights):
-        #     stay.extend('0')
-        # self.action_space.remove(stay)
+        self.stay = []
+        for i in range(0, self.n_flights):
+            self.stay.extend('s')
+        self.action_space.remove(self.stay)
         # ['uuu', 'uud', 'uul', 'uur', 'uus',
         #  'udu', 'udd', 'udl', 'udr', 'uds',
         #  'ulu', 'uld', 'ull', 'ulr', 'uls',
@@ -128,7 +129,7 @@ class Maze(tk.Tk, object):
 
     def reset(self):
         self.update()
-        time.sleep(0.1)
+        time.sleep(0.3)
         origin = np.array([20, 20])
         for i in range(0, self.n_flights):
             self.canvas.delete(rects['rect'+str(i)])
@@ -158,7 +159,7 @@ class Maze(tk.Tk, object):
                 elif diff_ss[1] < 0:                # up
                     action_list = ['r', 'u']
                 else:
-                    action_list = ['r', 's']        # stay
+                    action_list = ['r']
 
             elif diff_ss[0] < 0:                 # left
                 if diff_ss[1] > 0:                  # down
@@ -166,20 +167,23 @@ class Maze(tk.Tk, object):
                 elif diff_ss[1] < 0:                # up
                     action_list = ['l', 'u']
                 else:
-                    action_list = ['l', 's']        # stay
+                    action_list = ['l']
 
             elif diff_ss[1] > 0:                # down
-                action_list = ['d', 's']            # stay
+                action_list = ['d']
 
             elif diff_ss[1] < 0:                # up
-                action_list = ['u', 's']            # stay
+                action_list = ['u']
 
             else:
                 action_list = ['s']  # stay
 
             a = random.sample(action_list, 1)
             suggest_action.extend(a)
-        suggest_action_num = self.action_space.index(suggest_action)
+        if operator.eq(self.stay, suggest_action):
+            suggest_action_num = np.random.randint(0, self.n_actions)
+        else:
+            suggest_action_num = self.action_space.index(suggest_action)
 
         # return observation
         return s_, suggest_action_num
@@ -203,34 +207,36 @@ class Maze(tk.Tk, object):
                     base_action[1] -= UNIT
                 else:
                     out_of_bond = True
-                    break
             elif action_name[i] == 'd':   # down
                 if states['s'+str(i)][1] < (MAZE_H - 1) * UNIT:
                     base_action[1] += UNIT
                 else:
                     out_of_bond = True
-                    break
             elif action_name[i] == 'r':   # right
                 if states['s'+str(i)][0] < (MAZE_W - 1) * UNIT:
                     base_action[0] += UNIT
                 else:
                     out_of_bond = True
-                    break
             elif action_name[i] == 'l':   # left
                 if states['s'+str(i)][0] > UNIT:
                     base_action[0] -= UNIT
                 else:
                     out_of_bond = True
-                    break
             self.canvas.move(rects['rect'+str(i)], base_action[0], base_action[1])  # move agent
 
         s_ = []
         ss_ = []
         ss_ovals = []
+        distance_sum = 0
+        force_suggest = True
         for i in range(0, self.n_flights):
             rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
             comb = np.hstack((rect_index, oval_index))
+            distance = oval_index - rect_index
+            distance_sum = sum(list(map(abs, distance)))
+            if distance_sum > 1:
+                force_suggest = False
             s_.extend(comb)
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
             ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
@@ -245,11 +251,17 @@ class Maze(tk.Tk, object):
 
         if out_of_bond:
             reward = -1
+            # if ignore_crash:
+            #     done = False
+            #     self.crash = True
+            # else:
             done = True
+            force_suggest = False
         else:
             for i in range(0, self.n_flights):
                 if ss_.count(ss_[i]) > 1:
-                    reward = -1
+                    reward = -1.0
+                    force_suggest = False
                     if ignore_crash:
                         done = False
                         self.crash = True
@@ -257,15 +269,16 @@ class Maze(tk.Tk, object):
                         done = True
                     break
 
-        if not done:
+        if not done and not self.crash:
             reached_flag = True
             for i in range(0, self.n_flights):
                 if ss_[i] != ss_ovals[i]:
                     reached_flag = False
 
             if reached_flag:
-                reward = 1.5
+                reward = 1.0
                 done = True
+                force_suggest = False
                 achieved = True
                 origin = np.array([20, 20])
                 self.flag = self.canvas.create_rectangle(
@@ -273,7 +286,9 @@ class Maze(tk.Tk, object):
                     origin[0] + UNIT * 3 + 15, origin[1] + 15,
                     fill='blue')
             else:
-                free_ss_count = 0
+                # reward = 0.5 - distance_sum * 0.1
+                # if reward < -0.5:
+                #     reward = -0.5
                 for i in range(0, self.n_flights):
                     if i not in stay_index:
                         diff_ss = np.array(ss_ovals[i])[:2] - np.array(ss_[i])[:2]
@@ -283,7 +298,7 @@ class Maze(tk.Tk, object):
                             elif diff_ss[1] < 0:  # up
                                 action_list = ['r', 'u']
                             else:
-                                action_list = ['r', 's']  # stay
+                                action_list = ['r']
 
                         elif diff_ss[0] < 0:  # left
                             if diff_ss[1] > 0:  # down
@@ -291,23 +306,27 @@ class Maze(tk.Tk, object):
                             elif diff_ss[1] < 0:  # up
                                 action_list = ['l', 'u']
                             else:
-                                action_list = ['l', 's']  # stay
+                                action_list = ['l']
 
                         elif diff_ss[1] > 0:  # down
-                            action_list = ['d', 's']  # stay
+                            action_list = ['d']
 
                         elif diff_ss[1] < 0:  # up
-                            action_list = ['u', 's']  # stay
+                            action_list = ['u']
                         else:
                             action_list = ['s']  # stay
 
                         a = random.sample(action_list, 1)
                         suggest_action.extend(a)
-                        free_ss_count = free_ss_count + 1
+
                     else:
                         suggest_action.append('s')                                 # stay
-                suggest_action_num = self.action_space.index(suggest_action)
-        return s_, reward, done, achieved, suggest_action_num, can_be_stored
+
+                if operator.eq(self.stay, suggest_action):
+                    suggest_action_num = np.random.randint(0, self.n_actions)
+                else:
+                    suggest_action_num = self.action_space.index(suggest_action)
+        return s_, reward, done, achieved, suggest_action_num, can_be_stored, force_suggest
 
     def render(self):
         time.sleep(0.01)
