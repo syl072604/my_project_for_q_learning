@@ -287,7 +287,7 @@ class Maze(tk.Tk, object):
                     reached_flag = False
 
             if reached_flag:
-                reward = 5.0
+                reward = 2.0
                 done = True
                 force_suggest = False
                 achieved = True

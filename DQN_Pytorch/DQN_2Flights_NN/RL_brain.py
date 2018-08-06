@@ -74,9 +74,9 @@ class NET(nn.Module):
         super(NET, self).__init__()
         self.fc1 = nn.Linear(n_features, 1000)
         self.fc1.weight.data.normal_(0, 0.1)  # initialization
-        self.fc2 = nn.Linear(1000, 1000)
+        self.fc2 = nn.Linear(1000, 3000)
         self.fc2.weight.data.normal_(0, 0.1)  # initialization
-        self.out = nn.Linear(1000, n_actions)   # fully connected layer, output over 600 classes
+        self.out = nn.Linear(3000, n_actions)   # fully connected layer, output over 600 classes
         self.out.weight.data.normal_(0, 0.1)  # initialization
 
     def forward(self, x):
@@ -170,6 +170,9 @@ class DQN(object):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+    def max_epsilon(self):
+        self.epsilon = 1.0
 
 
 

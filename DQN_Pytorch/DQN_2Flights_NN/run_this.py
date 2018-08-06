@@ -16,6 +16,9 @@ def run_maze():
             # fresh env
             env.render()
 
+            if success_rate > 90:
+                RL.max_epsilon()
+
             # RL choose action based on observation
             action = RL.choose_action(observation, suggest_action_num, force_suggest)
 
