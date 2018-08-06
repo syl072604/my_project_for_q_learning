@@ -4,6 +4,8 @@ from RL_brain import DQN
 def run_maze():
     step = 0
     achieved_step_min = 1000
+    check_success_episode = 0
+    success_rate = 0
     for episode in range(500000):
         # initial observation
         observation, suggest_action_num = env.reset()
@@ -20,6 +22,8 @@ def run_maze():
             if episode < 500:
                 ignore_crash = True
             else:
+                if episode == 500:
+                    print('stop ignore crash')
                 ignore_crash = False
             # RL take action and get next observation and reward
             observation_, reward, done, achieved, suggest_action_num, can_be_stored, force_suggest = env.step(action, ignore_crash)
@@ -37,13 +41,22 @@ def run_maze():
             action_record = action_record + str(env.action_space[action]) + '\n'
 
             if achieved:
-                if action_step<achieved_step_min:
-                    file = open('action_record.txt','w')
+                if action_step < achieved_step_min:
+                    file = open('action_record.txt', 'w')
                     achieved_step_min = action_step
                     file.write(str(achieved_step_min) + '\n' + action_record )
                     file.close()
 
             if done:
+                if not ignore_crash:
+                    if check_success_episode < 100:
+                        check_success_episode += 1
+                        if achieved:
+                            success_rate += 1
+                    else:
+                        print('success rate: %d percent' % success_rate)
+                        check_success_episode = 0
+                        success_rate = 0
                 break
 
             if action_step > 50:

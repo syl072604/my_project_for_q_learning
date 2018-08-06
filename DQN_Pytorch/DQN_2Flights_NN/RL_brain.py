@@ -19,13 +19,13 @@ import torch.nn.functional as F
 from collections import namedtuple
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-BATCH_SIZE = 128
-LR = 0.02                   # learning rate
+BATCH_SIZE = 1024
+LR = 0.01                   # learning rate
 EPSILON = 0.9               # greedy policy
 EPSILON_INCREMENT = 0.002
 GAMMA = 0.9                 # reward discount
 TARGET_REPLACE_ITER = 100   # target update frequency
-MEMORY_CAPACITY = 2000
+MEMORY_CAPACITY = 5000
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -53,9 +53,9 @@ class ReplayMemory(object):
 
     def sample(self, batch_size):
         self.memory = sorted(self.memory, key=lambda s: s[4], reverse=True)
-        m_index = list(range(0, batch_size//4))
+        m_index = list(range(0, batch_size//16))
         length = len(self.memory)
-        m_index.extend(random.sample(range(batch_size//4, length), batch_size*3//4))
+        m_index.extend(random.sample(range(batch_size//16, length), batch_size*15//16))
         mem_sampled = []
         for i in m_index:
             mem_sampled.append(self.memory[i])
@@ -72,13 +72,17 @@ class ReplayMemory(object):
 class NET(nn.Module):
     def __init__(self, n_features, n_actions):
         super(NET, self).__init__()
-        self.fc1 = nn.Linear(n_features, 50)
+        self.fc1 = nn.Linear(n_features, 1000)
         self.fc1.weight.data.normal_(0, 0.1)  # initialization
-        self.out = nn.Linear(50, n_actions)   # fully connected layer, output over 600 classes
+        self.fc2 = nn.Linear(1000, 1000)
+        self.fc2.weight.data.normal_(0, 0.1)  # initialization
+        self.out = nn.Linear(1000, n_actions)   # fully connected layer, output over 600 classes
         self.out.weight.data.normal_(0, 0.1)  # initialization
 
     def forward(self, x):
         x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
         x = F.relu(x)
         output = self.out(x)
         return output    # return x for visualization
@@ -103,7 +107,7 @@ class DQN(object):
     def store_transition(self, s, a, r, s_):
         s = torch.unsqueeze(torch.FloatTensor(s), 0)
         s_ = torch.unsqueeze(torch.FloatTensor(s_), 0)
-        abs_error_int = torch.max(torch.abs(torch.FloatTensor([r, 0.8]))).data.numpy()
+        abs_error_int = torch.max(torch.abs(torch.FloatTensor([r, 1.0]))).data.numpy()
         a = torch.LongTensor([[a]])
         r = torch.FloatTensor([[r]])
         self.memory.push([s, a, r, s_, abs_error_int])
@@ -130,7 +134,7 @@ class DQN(object):
         # target parameter update
         if self.learn_step_counter % TARGET_REPLACE_ITER == 0:
             self.target_net.load_state_dict(self.eval_net.state_dict())
-            print('target net replaced')
+            # print('target net replaced')
 
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
@@ -149,15 +153,15 @@ class DQN(object):
         # q_eval w.r.t the action in experience
         q_eval = self.eval_net(b_s).gather(1, b_a)  # shape (batch, 1)
 
-        q_eval4next = self.eval_net(b_s_).detach()  # detach from graph, don't backpropagate
-        b_a_ = q_eval4next.max(1)[1].view(BATCH_SIZE, 1)
-        q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
-        selected_q_next = q_next.gather(1, b_a_)
-        q_target = b_r + GAMMA*selected_q_next   # shape (batch, 1)
-
+        # q_eval4next = self.eval_net(b_s_).detach()  # detach from graph, don't backpropagate
+        # b_a_ = q_eval4next.max(1)[1].view(BATCH_SIZE, 1)
         # q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
-        # test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
-        # q_target = b_r + test_a   # shape (batch, 1)
+        # selected_q_next = q_next.gather(1, b_a_)
+        # q_target = b_r + GAMMA*selected_q_next   # shape (batch, 1)
+
+        q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
+        test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
+        q_target = b_r + test_a   # shape (batch, 1)
 
         abs_errors = torch.abs(q_target - q_eval).view(BATCH_SIZE).data.numpy()
         loss = self.loss_func(q_eval, q_target)
