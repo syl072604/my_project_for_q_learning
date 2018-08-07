@@ -74,9 +74,9 @@ class NET(nn.Module):
         super(NET, self).__init__()
         self.fc1 = nn.Linear(n_features, 1000)
         self.fc1.weight.data.normal_(0, 0.1)  # initialization
-        self.fc2 = nn.Linear(1000, 3000)
+        self.fc2 = nn.Linear(1000, 1000)
         self.fc2.weight.data.normal_(0, 0.1)  # initialization
-        self.out = nn.Linear(3000, n_actions)   # fully connected layer, output over 600 classes
+        self.out = nn.Linear(1000, n_actions)   # fully connected layer, output over 600 classes
         self.out.weight.data.normal_(0, 0.1)  # initialization
 
     def forward(self, x):
@@ -99,6 +99,7 @@ class DQN(object):
         self.epsilon = 0
         self.epsilon_max = EPSILON
         self.epsilon_increment = EPSILON_INCREMENT
+        self.change_input = 0
 
         self.memory = ReplayMemory(2000)     # initialize memory
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=LR)
@@ -174,6 +175,10 @@ class DQN(object):
     def max_epsilon(self):
         self.epsilon = 1.0
 
-
-
-
+    def change_input_count(self):
+        self.change_input += 1
+        self.epsilon = 0.0
+        if self.change_input > 20:
+            # 2 ways to save the net
+            torch.save(self.target_net, 'target_net.pkl')  # save entire net
+            torch.save(self.target_net.state_dict(), 'target_net_params.pkl') # save only the parameters

@@ -6,35 +6,44 @@ def run_maze():
     achieved_step_min = 1000
     check_success_episode = 0
     success_rate = 0
+    state_episode = 0
+    change_origin = True
     for episode in range(500000):
         # initial observation
-        observation, suggest_action_num = env.reset()
+        observation, suggest_action_num, distance_too_large = env.reset(change_origin)
+        if distance_too_large:
+            env.change_input()
+            state_episode = 0
+            RL.change_input_count()
+            print('distance too large change input:', RL.change_input)
         action_record = ''
         action_step = 0
         force_suggest = False
+        state_episode += 1
         while True:
             # fresh env
             env.render()
 
-            if success_rate > 90:
-                RL.max_epsilon()
-
             # RL choose action based on observation
             action = RL.choose_action(observation, suggest_action_num, force_suggest)
 
-            if episode < 500:
+            if state_episode < 200:
+                change_origin = True
+                ignore_crash = True
+            elif state_episode < 500:
+                change_origin = False
                 ignore_crash = True
             else:
-                if episode == 500:
-                    print('stop ignore crash')
+                if state_episode == 500:
+                    print('stop ignore crash for this input')
                 ignore_crash = False
             # RL take action and get next observation and reward
-            observation_, reward, done, achieved, suggest_action_num, can_be_stored, force_suggest = env.step(action, ignore_crash)
+            observation_, reward, done, achieved, suggest_action_num, can_be_stored, force_suggest = env.step(action, ignore_crash, change_origin)
 
             if can_be_stored:
                 RL.store_transition(observation, action, reward, observation_)
 
-            if (step > 200) and (step % 5 == 0):
+            if (step > 200) and (not ignore_crash) and (step % 5 == 0):
                 RL.learn()
 
             observation = observation_
@@ -58,8 +67,14 @@ def run_maze():
                             success_rate += 1
                     else:
                         print('success rate: %d percent' % success_rate)
+                        if success_rate > 50 or state_episode > 5000:
+                            env.change_input()
+                            state_episode = 0
+                            RL.change_input_count()
+                            print('change input:', RL.change_input)
                         check_success_episode = 0
                         success_rate = 0
+
                 break
 
             if action_step > 50:

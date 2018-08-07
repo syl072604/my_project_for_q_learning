@@ -17,6 +17,7 @@ import time
 import random
 import numpy as np
 import operator
+import copy
 from itertools import permutations
 if sys.version_info.major == 2:
     import Tkinter as tk
@@ -31,20 +32,20 @@ MAZE_W = 4  # grid width
 ovals = globals()
 rects = globals()
 
-origin_position = [[0, 0],
-                   [1, 0],
-                   [2, 2],
-                   [3, 2],
-                   # [4, 4],
-                   # [5, 4],
-                   ]
-target_position = [[1, 1],
-                   [3, 1],
-                   [1, 3],
-                   [3, 3],
-                   # [1, 5],
-                   # [3, 5],
-                  ]
+# origin_position = [[0, 0],
+#                    [1, 0],
+#                    [2, 2],
+#                    [3, 2],
+#                    # [4, 4],
+#                    # [5, 4],
+#                    ]
+# target_position = [[1, 1],
+#                    [3, 1],
+#                    [1, 3],
+#                    [3, 3],
+#                    # [1, 5],
+#                    # [3, 5],
+#                   ]
 
 
 class Maze(tk.Tk, object):
@@ -60,7 +61,8 @@ class Maze(tk.Tk, object):
         self.maze_space = [MAZE_W-1, MAZE_H-1]
         self.n_actions = self.n_action_type**self.n_flights - 1
         self.action_space = []
-
+        self.distance_min = 100
+        self.distance_std_min = 100
         for i in range(0, self.n_actions+1):
             action_name = []
             n = i
@@ -92,12 +94,11 @@ class Maze(tk.Tk, object):
             position[1] = i % MAZE_W
             self.position_space.append(position)
 
-        pos_space_tmp = self.position_space
-
-        origin_position = sorted(random.sample(pos_space_tmp, 4))
-        for tu in origin_position:
+        pos_space_tmp = copy.deepcopy(self.position_space)
+        self.origin_position = sorted(random.sample(pos_space_tmp, 4))
+        for tu in self.origin_position:
             pos_space_tmp.remove(tu)
-        target_position = sorted(random.sample(pos_space_tmp, 4))
+        self.target_position = sorted(random.sample(pos_space_tmp, 4))
 
         self.title('maze')
         self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
@@ -121,15 +122,15 @@ class Maze(tk.Tk, object):
         # create origin
         origin = np.array([20, 20])
 
-        for i in range(0,self.n_flights):
-            oval_center = origin + np.array([UNIT * target_position[i][0], UNIT * target_position[i][1]])
+        for i in range(0, self.n_flights):
+            oval_center = origin + np.array([UNIT * self.target_position[i][0], UNIT * self.target_position[i][1]])
             ovals['oval'+str(i)] = self.canvas.create_oval(
                 oval_center[0] - 15, oval_center[1] - 15,
                 oval_center[0] + 15, oval_center[1] + 15,
                 fill='yellow')
 
-        for i in range(0,self.n_flights):
-            rect_center = origin + np.array([UNIT * [i][0], UNIT * origin_position[i][1]])
+        for i in range(0, self.n_flights):
+            rect_center = origin + np.array([UNIT * [i][0], UNIT * self.origin_position[i][1]])
             rects['rect'+str(i)] = self.canvas.create_rectangle(
                 rect_center[0] - 15, rect_center[1] - 15,
                 rect_center[0] + 15, rect_center[1] + 15,
@@ -142,13 +143,46 @@ class Maze(tk.Tk, object):
         # pack all
         self.canvas.pack()
 
-    def reset(self):
+    def reset(self, change_origin):
         self.update()
-        time.sleep(0.001)
+        time.sleep(0.01)
         origin = np.array([20, 20])
+        distance_too_large = False
+        if change_origin:
+            temp_origin = copy.deepcopy(self.origin_position)
+            random.shuffle(temp_origin)
+            dist_list = []
+            for i in range(0, self.n_flights):
+                origin_pos = temp_origin[i]
+                target_pos = self.target_position[i]
+                distance = np.array(origin_pos) - np.array(target_pos)
+                dist = sum(list(map(abs, distance)))
+                dist_list.append(dist)
+
+            distance_sum = sum(dist_list)
+            distance_std = np.std(dist_list)
+            if distance_sum < self.distance_min:
+                self.distance_min = distance_sum
+                self.origin_position = copy.deepcopy(temp_origin)
+                print('shuffle origin', self.distance_min, self.distance_std_min)
+            elif (distance_sum == self.distance_min) and distance_std < self.distance_std_min:
+                self.distance_std_min = distance_std
+                self.origin_position = copy.deepcopy(temp_origin)
+                print('shuffle origin', self.distance_min, self.distance_std_min)
+        else:
+            if self.distance_min > 8:
+                distance_too_large = True
+
         for i in range(0, self.n_flights):
-            self.canvas.delete(rects['rect'+str(i)])
-            rect_center = origin + np.array([UNIT * origin_position[i][0], UNIT * origin_position[i][1]])
+            self.canvas.delete(ovals['oval' + str(i)])
+            oval_center = origin + np.array([UNIT * self.target_position[i][0], UNIT * self.target_position[i][1]])
+            ovals['oval'+str(i)] = self.canvas.create_oval(
+                oval_center[0] - 15, oval_center[1] - 15,
+                oval_center[0] + 15, oval_center[1] + 15,
+                fill='yellow')
+        for i in range(0, self.n_flights):
+            self.canvas.delete(rects['rect' + str(i)])
+            rect_center = origin + np.array([UNIT * self.origin_position[i][0], UNIT * self.origin_position[i][1]])
             rects['rect'+str(i)] = self.canvas.create_rectangle(
                 rect_center[0] - 15, rect_center[1] - 15,
                 rect_center[0] + 15, rect_center[1] + 15,
@@ -160,8 +194,8 @@ class Maze(tk.Tk, object):
         ss_ovals = []
         suggest_action = []
         for i in range(0, self.n_flights):
-            rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
-            oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2],dtype=int) - np.array([5, 5]))//UNIT
+            rect_index = (np.array(self.canvas.coords(rects['rect'+str(i)])[:2], dtype=int) - np.array([5, 5]))//UNIT
+            oval_index = (np.array(self.canvas.coords(rects['oval'+str(i)])[:2], dtype=int) - np.array([5, 5]))//UNIT
             ss_.append(self.canvas.coords(rects['rect' + str(i)]))
             ss_ovals.append(self.canvas.coords(ovals['oval'+str(i)]))
             comb = np.hstack((rect_index, oval_index))
@@ -201,15 +235,28 @@ class Maze(tk.Tk, object):
             suggest_action_num = self.action_space.index(suggest_action)
 
         # return observation
-        return s_, suggest_action_num
+        return s_, suggest_action_num, distance_too_large
 
-    def step(self, action, ignore_crash):
+    def change_input(self):
+
+        pos_space_tmp = copy.deepcopy(self.position_space)
+        self.origin_position = sorted(random.sample(pos_space_tmp, 4))
+        for tu in self.origin_position:
+            pos_space_tmp.remove(tu)
+        self.target_position = sorted(random.sample(pos_space_tmp, 4))
+        self.distance_min = 100
+        self.distance_std_min = 100
+
+    def step(self, action, ignore_crash, change_origin):
 
         if self.crash:
             can_be_stored = False
             self.crash = False
         else:
             can_be_stored = True
+
+        if change_origin:
+            can_be_stored = False
 
         states = locals()
         action_name = self.action_space[action]
