@@ -26,8 +26,8 @@ else:
 
 
 UNIT = 40   # pixels
-MAZE_H = 4  # grid height
-MAZE_W = 4  # grid width
+MAZE_H = 3  # grid height
+MAZE_W = 3  # grid width
 
 ovals = globals()
 rects = globals()
@@ -53,8 +53,8 @@ class Maze(tk.Tk, object):
     def __init__(self):
         super(Maze, self).__init__()
         self.crash = False
-        self.n_flights = 4
-        self.n_features = 4 *self.n_flights
+        self.n_flights = 2
+        self.n_features = 4 * self.n_flights
         self.action_type = ['s', 'u', 'd', 'r', 'l']   # ['s, 'u', 'd', 'r', 'l']
         self.action_type_extend = []
         self.n_action_type = len(self.action_type)
@@ -63,6 +63,9 @@ class Maze(tk.Tk, object):
         self.action_space = []
         self.distance_min = 100
         self.distance_std_min = 100
+        self.origin_mem = []
+        self.target_mem = []
+        self.input_position = 0
         for i in range(0, self.n_actions+1):
             action_name = []
             n = i
@@ -95,10 +98,10 @@ class Maze(tk.Tk, object):
             self.position_space.append(position)
 
         pos_space_tmp = copy.deepcopy(self.position_space)
-        self.origin_position = sorted(random.sample(pos_space_tmp, 4))
+        self.origin_position = sorted(random.sample(pos_space_tmp, self.n_flights))
         for tu in self.origin_position:
             pos_space_tmp.remove(tu)
-        self.target_position = sorted(random.sample(pos_space_tmp, 4))
+        self.target_position = sorted(random.sample(pos_space_tmp, self.n_flights))
 
         self.title('maze')
         self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
@@ -170,7 +173,7 @@ class Maze(tk.Tk, object):
                 self.origin_position = copy.deepcopy(temp_origin)
                 print('shuffle origin', self.distance_min, self.distance_std_min)
         else:
-            if self.distance_min > 8:
+            if 100 > self.distance_min > self.n_flights * 5:
                 distance_too_large = True
 
         for i in range(0, self.n_flights):
@@ -238,12 +241,25 @@ class Maze(tk.Tk, object):
         return s_, suggest_action_num, distance_too_large
 
     def change_input(self):
+        if len(self.origin_mem) < 20:
+            self.origin_mem.append(None)
+            self.target_mem.append(None)
 
-        pos_space_tmp = copy.deepcopy(self.position_space)
-        self.origin_position = sorted(random.sample(pos_space_tmp, 4))
-        for tu in self.origin_position:
-            pos_space_tmp.remove(tu)
-        self.target_position = sorted(random.sample(pos_space_tmp, 4))
+            pos_space_tmp = copy.deepcopy(self.position_space)
+            self.origin_position = sorted(random.sample(pos_space_tmp, self.n_flights))
+            for tu in self.origin_position:
+                pos_space_tmp.remove(tu)
+            self.target_position = sorted(random.sample(pos_space_tmp, self.n_flights))
+
+            self.origin_mem[self.input_position] = self.origin_position
+            self.target_mem[self.input_position] = self.target_position
+            self.input_position = (self.input_position + 1) % 20
+        else:
+            self.origin_position = self.origin_mem[self.input_position]
+            self.target_position = self.target_mem[self.input_position]
+            self.input_position = (self.input_position + 1) % 20
+            print('mem:', self.input_position)
+
         self.distance_min = 100
         self.distance_std_min = 100
 

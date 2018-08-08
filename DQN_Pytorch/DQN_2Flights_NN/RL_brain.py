@@ -72,9 +72,9 @@ class ReplayMemory(object):
 class NET(nn.Module):
     def __init__(self, n_features, n_actions):
         super(NET, self).__init__()
-        self.fc1 = nn.Linear(n_features, 1000)
+        self.fc1 = nn.Linear(n_features, 100)
         self.fc1.weight.data.normal_(0, 0.1)  # initialization
-        self.fc2 = nn.Linear(1000, 1000)
+        self.fc2 = nn.Linear(100, 1000)
         self.fc2.weight.data.normal_(0, 0.1)  # initialization
         self.out = nn.Linear(1000, n_actions)   # fully connected layer, output over 600 classes
         self.out.weight.data.normal_(0, 0.1)  # initialization
@@ -138,6 +138,8 @@ class DQN(object):
             # print('target net replaced')
 
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+        if self.epsilon > 0.99:
+            print('full epsilon')
         self.learn_step_counter += 1
 
         if len(self.memory) < BATCH_SIZE:
@@ -154,15 +156,15 @@ class DQN(object):
         # q_eval w.r.t the action in experience
         q_eval = self.eval_net(b_s).gather(1, b_a)  # shape (batch, 1)
 
-        # q_eval4next = self.eval_net(b_s_).detach()  # detach from graph, don't backpropagate
-        # b_a_ = q_eval4next.max(1)[1].view(BATCH_SIZE, 1)
-        # q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
-        # selected_q_next = q_next.gather(1, b_a_)
-        # q_target = b_r + GAMMA*selected_q_next   # shape (batch, 1)
-
+        q_eval4next = self.eval_net(b_s_).detach()  # detach from graph, don't backpropagate
+        b_a_ = q_eval4next.max(1)[1].view(BATCH_SIZE, 1)
         q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
-        test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
-        q_target = b_r + test_a   # shape (batch, 1)
+        selected_q_next = q_next.gather(1, b_a_)
+        q_target = b_r + GAMMA*selected_q_next   # shape (batch, 1)
+
+        # q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
+        # test_a = GAMMA * q_next.max(1)[0].view(BATCH_SIZE, 1)
+        # q_target = b_r + test_a   # shape (batch, 1)
 
         abs_errors = torch.abs(q_target - q_eval).view(BATCH_SIZE).data.numpy()
         loss = self.loss_func(q_eval, q_target)
@@ -177,8 +179,8 @@ class DQN(object):
 
     def change_input_count(self):
         self.change_input += 1
-        self.epsilon = 0.0
+        self.epsilon = 0.01 * self.change_input
         if self.change_input > 20:
             # 2 ways to save the net
-            torch.save(self.target_net, 'target_net.pkl')  # save entire net
-            torch.save(self.target_net.state_dict(), 'target_net_params.pkl') # save only the parameters
+            torch.save(self.target_net, 'target_net_6.pkl')  # save entire net
+            torch.save(self.target_net.state_dict(), 'target_net_params_6.pkl') # save only the parameters

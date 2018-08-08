@@ -1,6 +1,7 @@
 from maze_env import Maze
 from RL_brain import DQN
-
+import matplotlib.pyplot as plt
+import numpy as np
 def run_maze():
     step = 0
     achieved_step_min = 1000
@@ -8,6 +9,8 @@ def run_maze():
     success_rate = 0
     state_episode = 0
     change_origin = True
+    rate_reset = False
+    success_rate_plot = []
     for episode in range(500000):
         # initial observation
         observation, suggest_action_num, distance_too_large = env.reset(change_origin)
@@ -27,14 +30,14 @@ def run_maze():
             # RL choose action based on observation
             action = RL.choose_action(observation, suggest_action_num, force_suggest)
 
-            if state_episode < 200:
+            if state_episode < 20:
                 change_origin = True
                 ignore_crash = True
-            elif state_episode < 500:
+            elif state_episode < 50:
                 change_origin = False
                 ignore_crash = True
             else:
-                if state_episode == 500:
+                if state_episode == 50:
                     print('stop ignore crash for this input')
                 ignore_crash = False
             # RL take action and get next observation and reward
@@ -67,11 +70,19 @@ def run_maze():
                             success_rate += 1
                     else:
                         print('success rate: %d percent' % success_rate)
-                        if success_rate > 50 or state_episode > 5000:
+                        if rate_reset:
+                            plt.close()
+                            success_rate_plot.append(success_rate)
+                            plt.plot(np.array(success_rate_plot), c='r', label='success_rate_plot')
+                            plt.show()
+                        if success_rate > 80 or state_episode > 5000:
+                            rate_reset = True
                             env.change_input()
                             state_episode = 0
                             RL.change_input_count()
                             print('change input:', RL.change_input)
+                        else:
+                            rate_reset = False
                         check_success_episode = 0
                         success_rate = 0
 
